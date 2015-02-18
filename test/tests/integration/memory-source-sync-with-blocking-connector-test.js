@@ -10,8 +10,6 @@ var source1,
     source1to2Connector,
     source2to1Connector;
 
-var counter = 0;
-
 module("Integration - Memory Source Sync (Blocking)", {
   setup: function() {
     Orbit.Promise = Promise;
@@ -40,6 +38,10 @@ module("Integration - Memory Source Sync (Blocking)", {
 
     source1.id = 'source1';
     source2.id = 'source2';
+
+    source1.on('didTransform', function(op, inverse) {
+      // console.log('didTransform1', counter1, op, inverse);
+    });
 
     // Create connectors
     source1to2Connector = new TransformConnector(source1, source2);
@@ -86,6 +88,14 @@ test("an array of transforms can be applied to one source and should be automati
 
   stop();
 
+  source1.on('didTransform', function(op) {
+    // console.log('didTransform', op);
+
+    return new Orbit.Promise(function(resolve) {
+      resolve();
+    });
+  });
+
   source1.transform([{
     op: 'add',
     path: ['planet', '123'],
@@ -111,6 +121,14 @@ test("replacing value with null should not cause infinite update loop", function
   expect(4);
 
   stop();
+
+  source1.on('didTransform', function(op) {
+    // console.log('didTransform', op);
+
+    return new Orbit.Promise(function(resolve) {
+      resolve();
+    });
+  });
 
   source1.transform({
     op: 'add',

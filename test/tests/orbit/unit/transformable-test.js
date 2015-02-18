@@ -1,6 +1,7 @@
 import Orbit from 'orbit/main';
 import Transformable from 'orbit/transformable';
 import { Promise } from 'rsvp';
+import { equalOps } from 'tests/test-helper';
 
 var source;
 
@@ -98,7 +99,7 @@ test("it should trigger `didTransform` event after a successful transform", func
 
   source._transform = function(operation) {
     equal(++order, 1, '_transform performed first');
-    deepEqual(Array.prototype.slice.call(arguments, 0), [addOp], '_handler args match original call args');
+    equalOps(operation, addOp, '_handler args match original call args');
     this.didTransform(addOp, inverseOp);
     return successfulOperation();
   };
@@ -107,8 +108,8 @@ test("it should trigger `didTransform` event after a successful transform", func
 
   source.on('didTransform', function(operation, inverse) {
     equal(++order, 2, 'didTransform triggered after action performed successfully');
-    deepEqual(operation, addOp, 'operation matches');
-    deepEqual(inverse, inverseOp, 'inverse matches');
+    equalOps(operation, addOp, 'operation matches');
+    equalOps(inverse, inverseOp, 'inverse matches');
   });
 
   stop();
@@ -118,6 +119,33 @@ test("it should trigger `didTransform` event after a successful transform", func
   });
 });
 
+test("it should perform transforms in the order they are pushed", function() {
+  expect(3);
+
+  var order = 0,
+      addOp = {op: 'add', path: 'planet/1', value: 'data'},
+      inverseOp = {op: 'remove', path: 'planet/1'};
+
+  source._transform = function(operation) {
+    if (operation.op === 'add') {
+      equal(++order, 1, '_transform add performed first');
+    }
+
+    if (operation.op === 'remove') {
+      equal(++order, 2, '_transform remove performed second');
+    }
+
+    return successfulOperation();
+  };
+
+  Transformable.extend(source);
+
+  stop();
+  source.transform([addOp, inverseOp]).then(function() {
+    start();
+    equal(++order, 3, 'promise resolved last');
+  });
+});
 
 test("it should wait for the current settle loop before starting another", function() {
   expect(11);
@@ -126,13 +154,14 @@ test("it should wait for the current settle loop before starting another", funct
       addOp = {op: 'add', path: 'planet/1', value: 'data'},
       inverseOp = {op: 'remove', path: 'planet/1'};
 
-  // though this is definitely an awkward use case, it definitely ensures execution order
+  // though this is definitely an awkward use case, it ensures execution order
   // is what we want it to be
   source._transform = function(operation) {
+    // console.log('_transform', operation.serialize());
     if (operation.op === 'add') {
       equal(++order, 1, '_transform add performed first');
-      this.didTransform(addOp, inverseOp);
-      this.settleTransforms().then(function() {
+      this.didTransform(addOp, [inverseOp]);
+      this.transformQueue.then(function() {
         equal(++order, 7, 'settleTransforms while transforming called after other transforms');
       });
     }
@@ -141,10 +170,10 @@ test("it should wait for the current settle loop before starting another", funct
       this.didTransform(inverseOp, {order: 4});
       this.didTransform(inverseOp, {order: 5});
       this.didTransform(inverseOp, {order: 6});
-      this.settleTransforms().then(function() {
+      this.transformQueue.then(function() {
         equal(++order, 8, 'settleTransforms while transforming called after other transforms');
       });
-      this.settleTransforms().then(function() {
+      this.transformQueue.then(function() {
         equal(++order, 9, 'settleTransforms while transforming called after other transforms');
       });
     }
@@ -156,7 +185,7 @@ test("it should wait for the current settle loop before starting another", funct
   source.on('didTransform', function(operation, inverse) {
     if (operation.op === 'add') {
       equal(++order, 2, 'didTransform triggered after action performed successfully');
-      deepEqual(operation, addOp, 'operation matches');
+      equalOps(operation, addOp, 'operation matches');
     }
     if (operation.op === 'remove') {
       equal(++order, inverse.order, 'didTransform triggered after action');
