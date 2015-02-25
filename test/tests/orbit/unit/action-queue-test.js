@@ -196,88 +196,10 @@ test("will auto-process pushed async functions sequentially by default", functio
     data: op2
   });
 
-  queue.then(function() {
+  queue.process().then(function() {
     start();
     equal(++order, 8, 'queue resolves last');
   });
 
   trigger.emit('start1');
-});
-
-test("#then resolves when the queue finishes processing", function() {
-  expect(11);
-  stop();
-
-  var queue = new ActionQueue();
-
-  var op1 = {op: 'add', path: ['planets', '123'], value: 'Mercury'},
-      op2 = {op: 'add', path: ['planets', '234'], value: 'Venus'},
-      order = 0;
-
-  queue.on('actionComplete', function(action) {
-    if (action.data === op1) {
-      equal(++order, 3, 'op1 completed');
-
-    } else if (action.data === op2) {
-      equal(++order, 6, 'op2 completed');
-    }
-  });
-
-  queue.on('queueComplete', function() {
-    equal(++order, 7, 'queue completed');
-  });
-
-  var trigger = {};
-  Evented.extend(trigger);
-
-  var _transform = function(op) {
-    var promise;
-    if (op === op1) {
-      equal(++order, 1, '_transform with op1');
-      promise = new Promise(function(resolve) {
-        trigger.on('start1', function() {
-          equal(++order, 2, '_transform with op1 resolved');
-          resolve();
-        });
-      });
-
-    } else if (op === op2) {
-      equal(++order, 4, '_transform with op1');
-      promise = new Promise(function(resolve) {
-        equal(++order, 5, '_transform with op1 resolved');
-        resolve();
-      });
-    }
-    return promise;
-  };
-
-  queue.then(function() {
-    ok(!queue.processing, 'queue is not processing, so it resolves immediately');
-
-    queue.push({
-      id: 1,
-      process: function() {
-        _transform.call(this, this.data);
-      },
-      data: op1
-    });
-
-    queue.push({
-      id: 2,
-      process: function() {
-        _transform.call(this, this.data);
-      },
-      data: op2
-    });
-
-    ok(queue.processing, 'queue is processing');
-
-    queue.then(function() {
-      start();
-      ok(!queue.processing, 'queue resolves when it is done processing');
-      equal(++order, 8, 'queue resolves last');
-    });
-
-    trigger.emit('start1');
-  });
 });

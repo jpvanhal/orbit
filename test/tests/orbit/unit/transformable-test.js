@@ -57,7 +57,7 @@ test("it should require the definition of _transform", function() {
 test("it should resolve when _transform returns a promise", function() {
   expect(2);
 
-  source._transform = function() {
+  source._transform = function(o) {
     return new Promise(function(resolve, reject) {
       ok(true, '_transform promise resolved');
       resolve();
@@ -148,7 +148,7 @@ test("it should perform transforms in the order they are pushed", function() {
 });
 
 test("it should wait for the current settle loop before starting another", function() {
-  expect(11);
+  expect(8);
 
   var order = 0,
       addOp = {op: 'add', path: 'planet/1', value: 'data'},
@@ -159,23 +159,18 @@ test("it should wait for the current settle loop before starting another", funct
   source._transform = function(operation) {
     // console.log('_transform', operation.serialize());
     if (operation.op === 'add') {
-      equal(++order, 1, '_transform add performed first');
+      equal(++order, 1, '_transform `add` performed first');
       this.didTransform(addOp, [inverseOp]);
-      this.transformQueue.then(function() {
-        equal(++order, 7, 'settleTransforms while transforming called after other transforms');
+
+      source.settleTransforms().then(function() {
+        start();
+        equal(++order, 6, 'settleTransforms finishes after all other transforms');
       });
+
     }
     if (operation.op === 'remove') {
-      equal(++order, 3, '_transform remove performed second');
-      this.didTransform(inverseOp, {order: 4});
-      this.didTransform(inverseOp, {order: 5});
-      this.didTransform(inverseOp, {order: 6});
-      this.transformQueue.then(function() {
-        equal(++order, 8, 'settleTransforms while transforming called after other transforms');
-      });
-      this.transformQueue.then(function() {
-        equal(++order, 9, 'settleTransforms while transforming called after other transforms');
-      });
+      equal(++order, 3, '_transform `remove` performed second');
+      this.didTransform(inverseOp, [addOp]);
     }
     return successfulOperation();
   };
@@ -184,17 +179,18 @@ test("it should wait for the current settle loop before starting another", funct
 
   source.on('didTransform', function(operation, inverse) {
     if (operation.op === 'add') {
-      equal(++order, 2, 'didTransform triggered after action performed successfully');
-      equalOps(operation, addOp, 'operation matches');
+      equal(++order, 2, 'didTransform triggered after `add` transform');
+      equalOps(operation, addOp, '`add` operation matches');
     }
     if (operation.op === 'remove') {
-      equal(++order, inverse.order, 'didTransform triggered after action');
+      equal(++order, 4, 'didTransform triggered after `remove` transform');
+      equalOps(operation, inverseOp, '`remove` operation matches');
     }
   });
 
   stop();
+
   source.transform([addOp, inverseOp]).then(function() {
-    start();
-    equal(++order, 10, 'promise resolved last');
+    equal(++order, 5, 'promise resolved last');
   });
 });
