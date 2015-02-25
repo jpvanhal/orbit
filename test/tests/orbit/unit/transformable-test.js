@@ -90,7 +90,7 @@ test("it should resolve when _transform simply returns (without a promise)", fun
   });
 });
 
-test("it should trigger `didTransform` event after a successful transform", function() {
+test("it should trigger `didTransform` event BEFORE a transform resolves if the transforms are RELATED", function() {
   expect(6);
 
   var order = 0,
@@ -100,7 +100,7 @@ test("it should trigger `didTransform` event after a successful transform", func
   source._transform = function(operation) {
     equal(++order, 1, '_transform performed first');
     equalOps(operation, addOp, '_handler args match original call args');
-    this.didTransform(addOp, inverseOp);
+    this.didTransform(operation, inverseOp);
     return successfulOperation();
   };
 
@@ -116,6 +116,43 @@ test("it should trigger `didTransform` event after a successful transform", func
   source.transform(addOp).then(function() {
     start();
     equal(++order, 3, 'promise resolved last');
+  });
+});
+
+test("it should trigger `didTransform` event AFTER a transform resolves if the transforms are UNRELATED", function() {
+  expect(6);
+
+  var order = 0,
+      addOp = {op: 'add', path: 'planet/1', value: 'data'},
+      unrelatedOp = {op: 'add', path: 'planet/2', value: 'data'},
+      inverseOp = {op: 'remove', path: 'planet/2'};
+
+  source._transform = function(operation) {
+    equal(++order, 1, '_transform performed first');
+    equalOps(operation, addOp, '_handler args match original call args');
+
+    this.didTransform(unrelatedOp, inverseOp);
+
+    return successfulOperation();
+  };
+
+  Transformable.extend(source);
+
+  source.on('didTransform', function(operation, inverse) {
+    console.log('didTransform - unrelatedOp');
+    equal(++order, 3, 'didTransform triggered after original unrelated transform resolves');
+    equalOps(operation, unrelatedOp, 'operation matches');
+    equalOps(inverse, inverseOp, 'inverse matches');
+  });
+
+  stop();
+  source.transform(addOp).then(function() {
+    console.log('addOp resolved');
+    equal(++order, 2, 'promise resolved after add op');
+
+    source.settleTransforms().then(function() {
+      start();
+    });
   });
 });
 
@@ -160,7 +197,7 @@ test("it should wait for the current settle loop before starting another", funct
     // console.log('_transform', operation.serialize());
     if (operation.op === 'add') {
       equal(++order, 1, '_transform `add` performed first');
-      this.didTransform(addOp, [inverseOp]);
+      this.didTransform(operation, [inverseOp]);
 
       source.settleTransforms().then(function() {
         start();
@@ -170,7 +207,7 @@ test("it should wait for the current settle loop before starting another", funct
     }
     if (operation.op === 'remove') {
       equal(++order, 3, '_transform `remove` performed second');
-      this.didTransform(inverseOp, [addOp]);
+      this.didTransform(operation, [addOp]);
     }
     return successfulOperation();
   };
