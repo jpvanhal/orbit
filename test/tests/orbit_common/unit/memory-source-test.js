@@ -183,7 +183,7 @@ test("#find - can find a record by id", function() {
       start();
       strictEqual(foundPlanet, planet, 'found planet matches original');
     });
-  }, function(e) { debugger; });
+  });
 });
 
 test("#find - returns RecordNotFoundException when a record can't be found by id", function() {

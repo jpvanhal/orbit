@@ -139,7 +139,6 @@ test("it should trigger `didTransform` event AFTER a transform resolves if the t
   Transformable.extend(source);
 
   source.on('didTransform', function(operation, inverse) {
-    console.log('didTransform - unrelatedOp');
     equal(++order, 3, 'didTransform triggered after original unrelated transform resolves');
     equalOps(operation, unrelatedOp, 'operation matches');
     equalOps(inverse, inverseOp, 'inverse matches');
@@ -147,9 +146,7 @@ test("it should trigger `didTransform` event AFTER a transform resolves if the t
 
   stop();
   source.transform(addOp).then(function() {
-    console.log('addOp resolved');
     equal(++order, 2, 'promise resolved after add op');
-
     source.settleTransforms().then(function() {
       start();
     });
