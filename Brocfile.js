@@ -20,9 +20,14 @@ var packages = [
     name: 'orbit-common',
     include: [/orbit-common.js/,
               /(orbit\-common\/.+.js)/],
-    exclude: [/orbit-common\/local-storage-source.js/,
+    exclude: [/orbit-common\/local-forage-source.js/,
+              /orbit-common\/local-storage-source.js/,
               /orbit-common\/jsonapi-serializer.js/,
               /orbit-common\/jsonapi-source.js/]
+  },
+  {
+    name: 'orbit-common-local-forage',
+    include: [/orbit-common\/local-forage-source.js/]
   },
   {
     name: 'orbit-common-local-storage',
@@ -130,6 +135,7 @@ mainWithTests = concat(new compileES6(mainWithTests), {
 var vendor = concat('bower_components', {
   inputFiles: [
     'jquery/dist/jquery.js',
+    'localforage/dist/localforage.js',
     'rsvp/rsvp.js'],
   outputFile: '/assets/vendor.js'
 });
