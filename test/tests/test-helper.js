@@ -34,6 +34,39 @@ var verifyLocalStorageIsEmpty = function(namespace) {
   }
 };
 
+var verifyLocalForageContainsRecord = function(namespace, type, id, record, ignoreFields) {
+  var expected = {};
+  expected[id] = record;
+
+  stop();
+  window.localforage.getItem(namespace).then(function(obj){
+    var actual;
+    if (type) actual = obj[type];
+    if (ignoreFields) {
+      for (var i = 0, l = ignoreFields.length, field; i < l; i++) {
+        field = ignoreFields[i];
+        actual[id][field] = record[field];
+      }
+    }
+    deepEqual(actual,
+              expected,
+              'data in local forage matches expectations');
+    start();
+  });
+};
+
+var verifyLocalForageIsEmpty = function(namespace) {
+  stop();
+  window.localforage.getItem(namespace).then(function(contents){
+    if (contents === null) {
+      equal(contents, null, 'local forage should still be empty');
+    } else {
+      deepEqual(contents, {}, 'local forage should still be empty');
+    }
+    start();
+  });
+};
+
 var equalOps = function(result, expected, msg) {
   var serializedResult;
   var serializedExpected;
@@ -89,4 +122,13 @@ var failedOperation = function(response) {
   });
 };
 
-export { verifyLocalStorageContainsRecord, verifyLocalStorageIsEmpty, equalOps, op, successfulOperation, failedOperation };
+export {
+  equalOps,
+  failedOperation,
+  op,
+  successfulOperation,
+  verifyLocalForageContainsRecord,
+  verifyLocalForageIsEmpty,
+  verifyLocalStorageContainsRecord,
+  verifyLocalStorageIsEmpty
+};
