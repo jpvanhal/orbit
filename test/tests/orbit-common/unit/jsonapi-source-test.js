@@ -289,6 +289,24 @@ test("#updateLink - can replace a hasOne relationship with PATCH", function() {
   });
 });
 
+test("#updateLink - can replace a hasOne relationship as null with PATCH", function() {
+  expect(2);
+
+  server.respondWith('PATCH', '/moons/987/relationships/planet', function(xhr) {
+    deepEqual(JSON.parse(xhr.requestBody), {data: null},
+              'PATCH request to replace link');
+    xhr.respond(200,
+                {'Content-Type': 'application/json'},
+                JSON.stringify({}));
+  });
+
+  stop();
+  source.updateLink('moon', {id: '987'}, 'planet', null).then(function() {
+    start();
+    ok(true, 'records linked');
+  });
+});
+
 test("#updateLink - can replace a hasMany relationship (flagged as `actsAsSet`) with PATCH", function() {
   expect(2);
 
