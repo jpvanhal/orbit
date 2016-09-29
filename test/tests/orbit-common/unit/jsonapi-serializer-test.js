@@ -219,6 +219,31 @@ test("#serialize - can serialize a simple resource with only attributes", functi
   );
 });
 
+test("#serialize - can serialize a simple resource with attributes and empty relationships", function() {
+  setupWithLocalIds();
+
+  deepEqual(
+    serializer.serialize(
+      'planet',
+      {
+        name: 'Jupiter',
+        classification: 'gas giant',
+        __rel: {}
+      }
+    ),
+    {
+      data: {
+        type: 'planets',
+        attributes: {
+          name: 'Jupiter',
+          classification: 'gas giant'
+        }
+      }
+    },
+    'serialized document matches'
+  );
+});
+
 test("#serialize - can serialize a resource with attributes and has-many relationships", function() {
   setupWithLocalIds();
 
