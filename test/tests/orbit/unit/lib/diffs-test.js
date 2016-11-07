@@ -109,13 +109,13 @@ test("#diffs generates `replace` patches when comparing two objects (as per rfc 
   b = {id: {a: '1', b: '3'}, name: 'Jupiter', classification: 'gas giant'};
 
   deepEqual(diffs(a, b, {basePath: 'planets/1'}),
-            [{op: 'replace', path: 'planets/1/id/b', value: '3'}]);
+            [{op: 'replace', path: 'planets/1/id', value: {a: '1', b: '3'}}]);
 
   a = {id: {a: '1', b: '2'}, name: 'Jupiter', classification: 'gas giant'};
   b = {id: {a: '1', b: '3'}, name: 'Earth', classification: 'terrestrial'};
 
   deepEqual(diffs(a, b, {basePath: 'planets/1'}),
-            [{op: 'replace', path: 'planets/1/id/b', value: '3'},
+            [{op: 'replace', path: 'planets/1/id', value: {a: '1', b: '3'}},
              {op: 'replace', path: 'planets/1/name', value: 'Earth'},
              {op: 'replace', path: 'planets/1/classification', value: 'terrestrial'}]);
 });
